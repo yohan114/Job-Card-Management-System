@@ -492,8 +492,16 @@ export default function JobCardApp() {
   };
 
   // Export handlers
-  const handleExportMachines = () => window.open('/api/machines/export', '_blank');
-  const handleExportMaterials = (category: IssuedMaterial['category']) => window.open(`/api/materials/export?category=${category}`, '_blank');
+  const handleExportMachines = () => {
+    window.open('/api/machines/export', '_blank');
+    toast.success('Export started! Downloading machines data...');
+  };
+  
+  const handleExportMaterials = (category: IssuedMaterial['category']) => {
+    window.open(`/api/materials/export?category=${category}`, '_blank');
+    const categoryName = categoryConfig[category].label;
+    toast.success(`Export started! Downloading ${categoryName} data...`);
+  };
 
   // Auto-generate job cards
   const handleAutoGenerateAll = async () => {
