@@ -21,9 +21,10 @@ export async function POST(request: NextRequest) {
     let skipped = 0;
 
     for (const row of data as any[]) {
-      // Handle both CSV and Excel formats
-      const registrationNo = row['REGISTRATION NO'] || row['registration_no'] || row['Registration No'];
+      // Handle multiple column name formats
+      const registrationNo = row['REGISTRATION NO'] || row['registration_no'] || row['Registration No'] || row['RegistrationNO'] || row['registration number'];
       
+      // Skip only if registration number is completely empty (required field)
       if (!registrationNo || registrationNo.toString().trim() === '') {
         skipped++;
         continue;
@@ -39,15 +40,27 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // Helper function to get value or null (handle empty cells)
+      const getValueOrNull = (value: any) => {
+        if (value === undefined || value === null || value === '') return null;
+        return value.toString().trim() || null;
+      };
+
+      // Helper function to get value or default
+      const getValueOrDefault = (value: any, defaultValue: string) => {
+        if (value === undefined || value === null || value === '') return defaultValue;
+        return value.toString().trim() || defaultValue;
+      };
+
       await db.machine.create({
         data: {
-          ecNo: row['E&C NO'] || row['ec_no'] || row['E&C No'] || null,
-          brand: row['BRAND'] || row['brand'] || 'Unknown',
-          type: row['TYPE'] || row['type'] || row['machine_type'] || 'Unknown',
-          modelNo: row['MODEL NO'] || row['model_no'] || row['Model No'] || null,
+          ecNo: getValueOrNull(row['E&C NO'] || row['ec_no'] || row['E&C No'] || row['ECNO'] || row['ec number']),
+          brand: getValueOrDefault(row['BRAND'] || row['brand'] || row['Brand'], 'Unknown'),
+          type: getValueOrDefault(row['TYPE'] || row['type'] || row['machine_type'] || row['Machine Type'] || row['Type'], 'Unknown'),
+          modelNo: getValueOrNull(row['MODEL NO'] || row['model_no'] || row['Model No'] || row['ModelNO'] || row['model number']),
           registrationNo: registrationNo.toString().trim(),
-          capacity: row['CAPACITY'] || row['capacity'] || null,
-          yom: parseInt(row['YOM'] || row['yom'] || '0') || null,
+          capacity: getValueOrNull(row['CAPACITY'] || row['capacity'] || row['Capacity']),
+          yom: parseInt(row['YOM'] || row['yom'] || row['Year'] || row['YEAR'] || row['year of manufacture'] || '0') || null,
         }
       });
       imported++;
