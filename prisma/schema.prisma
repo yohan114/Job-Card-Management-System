@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Vehicle/Machinery Master
+model Machine {
+  id             Int      @id @default(autoincrement())
+  ecNo           String?  @map("ec_no") // E&C Code - e.g., LB-01
+  brand          String
+  type           String   @map("machine_type")
+  modelNo        String?  @map("model_no")
+  registrationNo String   @unique @map("registration_no") // e.g., ZA-2609
+  capacity       String?
+  yom            Int?     @map("year_of_manufacture")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  jobCards       JobCard[]
+
+  @@map("machines")
+}
+
+// Issued Materials (MRN Items, Lubricants, Common Items, Filters)
+model IssuedMaterial {
+  id            Int                @id @default(autoincrement())
+  date          DateTime
+  mrnNo         String             @map("mrn_no") // Material Requisition Number
+  description   String
+  unit          String?
+  qty           Int
+  vehicleProject String            @map("vehicle_project") // Vehicle registration or project name
+  remark        String?
+  price         Float?
+  total         Float?
+  category      ItemCategory       @default(MRN_ITEM)
+  isUsed        Boolean            @default(false) @map("is_used")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  jobCardItems  JobCardItem[]
+
+  @@index([mrnNo])
+  @@index([vehicleProject])
+  @@index([category])
+  @@map("issued_materials")
+}
+
+// Job Cards
+model JobCard {
+  id                     Int               @id @default(autoincrement())
+  jobCardNo              String            @unique @map("job_card_no") // e.g., JC-2026-0001
+  vehicleRegNo           String            @map("vehicle_reg_no")
+  companyCode            String?           @map("company_code")
+  vehicleMachineryMeter  Float?            @map("vehicle_machinery_meter")
+  repairType             String?           @map("repair_type") // Accident/Breakdown/Routine/Other
+  expectedCompletionDate DateTime?         @map("expected_completion_date")
+  driverOperatorName     String?           @map("driver_operator_name")
+  driverOperatorContact  String?           @map("driver_operator_contact")
+  bcdNo                  String?           @map("bcd_no")
+  jobDescription         String?           @map("job_description")
+  jobStartDate           DateTime?         @map("job_start_date")
+  jobCompletedDate       DateTime?         @map("job_completed_date")
+  supervisorName         String?           @map("supervisor_name")
+  totalSparePartsCost    Float             @default(0) @map("total_spare_parts_cost")
+  totalManpowerCost      Float             @default(0) @map("total_manpower_cost")
+  outsideWorkCost        Float             @default(0) @map("outside_work_cost")
+  status                 JobCardStatus     @default(DRAFT)
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  machine                Machine?          @relation(fields: [vehicleRegNo], references: [registrationNo])
+  items                  JobCardItem[]
+  outsideWorks           OutsideWork[]
+
+  @@index([vehicleRegNo])
+  @@index([status])
+  @@map("job_cards")
+}
+
+// Linking job cards to issued materials
+model JobCardItem {
+  id               Int           @id @default(autoincrement())
+  jobCardId        Int           @map("job_card_id")
+  issuedMaterialId Int           @map("issued_material_id")
+  itemType         ItemCategory  @map("item_type")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  jobCard          JobCard       @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  issuedMaterial   IssuedMaterial @relation(fields: [issuedMaterialId], references: [id])
+
+  @@unique([jobCardId, issuedMaterialId])
+  @@map("job_card_items")
+}
+
+// External services for job cards
+model OutsideWork {
+  id          Int      @id @default(autoincrement())
+  jobCardId   Int      @map("job_card_id")
+  date        DateTime
+  description String
+  cost        Float    @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  jobCard     JobCard  @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+
+  @@map("outside_works")
+}
+
+// Enums
+enum ItemCategory {
+  MRN_ITEM      // Issued Materials
+  LUBRICANT     // Lubricant Issued
+  COMMON_ITEM   // Common Items (General/Special)
+  FILTER        // Filter Issues
+}
+
+enum JobCardStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
