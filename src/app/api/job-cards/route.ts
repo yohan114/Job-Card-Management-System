@@ -1,15 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// Generate job card number
-async function generateJobCardNo(): Promise<string> {
-  const year = new Date().getFullYear();
-  const count = await db.jobCard.count({
+// Get repair type code
+function getRepairTypeCode(repairType: string | null | undefined): string {
+  if (!repairType) return 'R'; // Default to Running
+  
+  const type = repairType.toLowerCase().trim();
+  
+  if (type.includes('accident') || type === 'a') return 'A';
+  if (type.includes('running') || type === 'r') return 'R';
+  if (type.includes('breakdown') || type === 'b') return 'B';
+  if (type.includes('routine') || type === 'u') return 'U';
+  if (type.includes('other') || type === 'o') return 'O';
+  
+  // Default to first letter of repair type
+  return repairType.charAt(0).toUpperCase();
+}
+
+// Generate job card number: 2026/02/R/0001
+async function generateJobCardNo(repairType?: string | null): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const typeCode = getRepairTypeCode(repairType);
+  
+  // Create prefix like "2026/02/R/"
+  const prefix = `${year}/${month}/${typeCode}/`;
+  
+  // Count existing job cards with this prefix
+  const existingCards = await db.jobCard.findMany({
     where: {
-      jobCardNo: { contains: `JC-${year}` }
-    }
+      jobCardNo: { startsWith: prefix }
+    },
+    select: { jobCardNo: true }
   });
-  return `JC-${year}-${String(count + 1).padStart(4, '0')}`;
+  
+  // Extract sequence numbers and find max
+  let maxSeq = 0;
+  for (const card of existingCards) {
+    const parts = card.jobCardNo.split('/');
+    if (parts.length === 4) {
+      const seq = parseInt(parts[3]);
+      if (!isNaN(seq) && seq > maxSeq) {
+        maxSeq = seq;
+      }
+    }
+  }
+  
+  const sequence = String(maxSeq + 1).padStart(4, '0');
+  return `${prefix}${sequence}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -89,7 +128,8 @@ export async function POST(request: NextRequest) {
       outsideWorks 
     } = body;
 
-    const jobCardNo = await generateJobCardNo();
+    // Generate job card number with repair type
+    const jobCardNo = await generateJobCardNo(repairType);
 
     const jobCard = await db.jobCard.create({
       data: {
@@ -144,7 +184,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(jobCard);
+    console.log('Job card created:', jobCardNo);
+    return NextResponse.json({ success: true, jobCard });
   } catch (error) {
     console.error('Error creating job card:', error);
     return NextResponse.json({ 

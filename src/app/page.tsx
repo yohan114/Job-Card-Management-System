@@ -1373,6 +1373,7 @@ export default function JobCardApp() {
                     <Select value={formData.repairType} onValueChange={(v) => setFormData({...formData, repairType: v})}>
                       <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Running">Running</SelectItem>
                         <SelectItem value="Accident">Accident</SelectItem>
                         <SelectItem value="Breakdown">Breakdown</SelectItem>
                         <SelectItem value="Routine">Routine Maintenance</SelectItem>

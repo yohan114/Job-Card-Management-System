@@ -1,28 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// Generate job card number
-async function generateJobCardNo(): Promise<string> {
-  const year = new Date().getFullYear();
-  const count = await db.jobCard.count({
+// Get repair type code
+function getRepairTypeCode(repairType: string | null | undefined): string {
+  if (!repairType) return 'R'; // Default to Running
+  
+  const type = repairType.toLowerCase().trim();
+  
+  if (type.includes('accident') || type === 'a') return 'A';
+  if (type.includes('running') || type === 'r') return 'R';
+  if (type.includes('breakdown') || type === 'b') return 'B';
+  if (type.includes('routine') || type === 'u') return 'U';
+  if (type.includes('other') || type === 'o') return 'O';
+  
+  // Default to first letter of repair type
+  return repairType.charAt(0).toUpperCase();
+}
+
+// Generate job card number: 2026/02/R/0001
+async function generateJobCardNo(repairType?: string | null): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const typeCode = getRepairTypeCode(repairType);
+  
+  // Create prefix like "2026/02/R/"
+  const prefix = `${year}/${month}/${typeCode}/`;
+  
+  // Count existing job cards with this prefix
+  const existingCards = await db.jobCard.findMany({
     where: {
-      jobCardNo: { contains: `JC-${year}` }
-    }
+      jobCardNo: { startsWith: prefix }
+    },
+    select: { jobCardNo: true }
   });
-  return `JC-${year}-${String(count + 1).padStart(4, '0')}`;
+  
+  // Extract sequence numbers and find max
+  let maxSeq = 0;
+  for (const card of existingCards) {
+    const parts = card.jobCardNo.split('/');
+    if (parts.length === 4) {
+      const seq = parseInt(parts[3]);
+      if (!isNaN(seq) && seq > maxSeq) {
+        maxSeq = seq;
+      }
+    }
+  }
+  
+  const sequence = String(maxSeq + 1).padStart(4, '0');
+  return `${prefix}${sequence}`;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { vehicleRegNo, materials } = body;
+    const { vehicleRegNo, materials, repairType } = body;
 
     if (!vehicleRegNo || !materials || materials.length === 0) {
       return NextResponse.json({ error: 'Vehicle and materials are required' }, { status: 400 });
     }
 
-    // Generate job card number
-    const jobCardNo = await generateJobCardNo();
+    // Generate job card number with repair type (default to Running)
+    const jobCardNo = await generateJobCardNo(repairType || 'Running');
 
     // Calculate total cost
     const totalSparePartsCost = materials.reduce((sum: number, m: any) => sum + (m.total || 0), 0);
@@ -32,6 +71,7 @@ export async function POST(request: NextRequest) {
       data: {
         jobCardNo,
         vehicleRegNo: vehicleRegNo.trim(),
+        repairType: repairType || 'Running',
         totalSparePartsCost,
         totalManpowerCost: 0,
         outsideWorkCost: 0,
@@ -60,6 +100,7 @@ export async function POST(request: NextRequest) {
       data: { isUsed: true }
     });
 
+    console.log('Auto-generated job card:', jobCardNo);
     return NextResponse.json({ 
       success: true, 
       jobCard,
@@ -103,7 +144,8 @@ export async function GET(request: NextRequest) {
     for (const [vehicle, materials] of Object.entries(groupedByVehicle)) {
       if (materials.length === 0) continue;
 
-      const jobCardNo = await generateJobCardNo();
+      // Default to Running for auto-generated cards
+      const jobCardNo = await generateJobCardNo('Running');
       const totalSparePartsCost = materials.reduce((sum, m) => sum + (m.total || 0), 0);
 
       try {
@@ -111,6 +153,7 @@ export async function GET(request: NextRequest) {
           data: {
             jobCardNo,
             vehicleRegNo: vehicle,
+            repairType: 'Running',
             totalSparePartsCost,
             totalManpowerCost: 0,
             outsideWorkCost: 0,
@@ -148,6 +191,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`Auto-generated ${results.length} job cards`);
     return NextResponse.json({
       success: true,
       totalJobCards: results.length,
