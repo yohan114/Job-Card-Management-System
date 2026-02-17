@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import './print-styles.css';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -91,10 +92,10 @@ type MainTab = 'dashboard' | 'vehicles' | 'autogenerate' | 'mrn' | 'lubricants' 
 
 // Category configuration
 const categoryConfig = {
-  MRN_ITEM: { label: 'MRN Items', color: 'bg-blue-100 text-blue-800', icon: Package, description: 'Issued Materials' },
-  LUBRICANT: { label: 'Lubricants', color: 'bg-amber-100 text-amber-800', icon: Droplets, description: 'Oils, Grease, Hydraulic Fluids' },
-  COMMON_ITEM: { label: 'Common Items', color: 'bg-green-100 text-green-800', icon: Settings, description: 'General/Special Items' },
-  FILTER: { label: 'Filters', color: 'bg-purple-100 text-purple-800', icon: Filter, description: 'Fuel, Air, Hydraulic Filters' }
+  MRN_ITEM: { label: 'MRN Items', color: 'bg-blue-100 text-blue-800', icon: Package, description: 'Issued Materials', shortLabel: 'MRN' },
+  LUBRICANT: { label: 'Lubricants', color: 'bg-amber-100 text-amber-800', icon: Droplets, description: 'Oils, Grease, Hydraulic Fluids', shortLabel: 'LUB' },
+  COMMON_ITEM: { label: 'Common Items', color: 'bg-green-100 text-green-800', icon: Settings, description: 'General/Special Items', shortLabel: 'COM' },
+  FILTER: { label: 'Filters', color: 'bg-purple-100 text-purple-800', icon: Filter, description: 'Fuel, Air, Hydraulic Filters', shortLabel: 'FLT' }
 };
 
 const statusConfig = {
@@ -666,6 +667,18 @@ export default function JobCardApp() {
 
   const selectedMachine = machines.find(m => m.registrationNo === selectedVehicle);
   const totals = calculateTotal();
+  const printRef = useRef<HTMLDivElement>(null);
+
+  // Print preview state
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+
+  // Print function
+  const handlePrint = () => {
+    setShowPrintPreview(true);
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
 
   // Render asset table component
   const renderAssetTable = (category: IssuedMaterial['category'], title: string, icon: React.ReactNode, description: string) => {
@@ -1413,97 +1426,277 @@ export default function JobCardApp() {
 
         {/* View Job Card */}
         {activeTab === 'view' && selectedJobCard && (
-          <div className="space-y-6">
+          <div className="space-y-6 no-print">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">{selectedJobCard.jobCardNo}</h2>
                 <p className="text-gray-500">{selectedJobCard.vehicleRegNo}</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</Button>
+                <Button variant="outline" onClick={handlePrint}><Printer className="w-4 h-4 mr-2" />Print</Button>
                 <Button variant="outline" onClick={() => setActiveTab('jobcards')}>Back to List</Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader><CardTitle>Vehicle Information</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  <div><p className="text-sm text-gray-500">Registration No</p><p className="font-medium">{selectedJobCard.vehicleRegNo}</p></div>
-                  <div><p className="text-sm text-gray-500">Company Code</p><p className="font-medium">{selectedJobCard.companyCode || '-'}</p></div>
-                  <div><p className="text-sm text-gray-500">Meter Reading</p><p className="font-medium">{selectedJobCard.vehicleMachineryMeter || '-'}</p></div>
-                  <div><p className="text-sm text-gray-500">Repair Type</p><p className="font-medium">{selectedJobCard.repairType || '-'}</p></div>
-                  <div><p className="text-sm text-gray-500">Driver/Operator</p><p className="font-medium">{selectedJobCard.driverOperatorName || '-'}</p></div>
-                  <div><p className="text-sm text-gray-500">Contact</p><p className="font-medium">{selectedJobCard.driverOperatorContact || '-'}</p></div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle>Job Information</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  <div><p className="text-sm text-gray-500">Start Date</p><p className="font-medium">{selectedJobCard.jobStartDate ? new Date(selectedJobCard.jobStartDate).toLocaleDateString() : '-'}</p></div>
-                  <div><p className="text-sm text-gray-500">Completed Date</p><p className="font-medium">{selectedJobCard.jobCompletedDate ? new Date(selectedJobCard.jobCompletedDate).toLocaleDateString() : '-'}</p></div>
-                  <div><p className="text-sm text-gray-500">Supervisor</p><p className="font-medium">{selectedJobCard.supervisorName || '-'}</p></div>
-                  <div><p className="text-sm text-gray-500">Status</p><Badge className={statusConfig[selectedJobCard.status].color}>{statusConfig[selectedJobCard.status].label}</Badge></div>
-                  <div className="col-span-2"><p className="text-sm text-gray-500">Job Description</p><p className="font-medium">{selectedJobCard.jobDescription || '-'}</p></div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader><CardTitle>Issued Items</CardTitle></CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead>MRN No</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedJobCard.items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell><Badge className={categoryConfig[item.itemType].color}>{categoryConfig[item.itemType].label}</Badge></TableCell>
-                        <TableCell>{item.issuedMaterial.mrnNo}</TableCell>
-                        <TableCell>{item.issuedMaterial.description}</TableCell>
-                        <TableCell>{item.issuedMaterial.unit}</TableCell>
-                        <TableCell>{item.issuedMaterial.qty}</TableCell>
-                        <TableCell className="text-right">{item.issuedMaterial.total?.toFixed(2) || '-'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle>Cost Summary</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between"><span className="text-gray-500">Spare Parts Cost</span><span className="font-medium">Rs. {selectedJobCard.totalSparePartsCost.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Manpower Cost</span><span className="font-medium">Rs. {selectedJobCard.totalManpowerCost.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Outside Work Cost</span><span className="font-medium">Rs. {selectedJobCard.outsideWorkCost.toFixed(2)}</span></div>
-                  <Separator />
-                  {(() => {
-                    const subtotal = selectedJobCard.totalSparePartsCost + selectedJobCard.totalManpowerCost + selectedJobCard.outsideWorkCost;
-                    const sundryWorkshopCost = subtotal * 0.10;
-                    const grandTotal = subtotal + sundryWorkshopCost;
-                    return (
-                      <>
-                        <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-medium">Rs. {subtotal.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">Sundry + Workshop (10%)</span><span className="font-medium text-amber-600">Rs. {sundryWorkshopCost.toFixed(2)}</span></div>
-                        <Separator />
-                        <div className="flex justify-between text-lg font-bold"><span>Grand Total</span><span className="text-green-600">Rs. {grandTotal.toFixed(2)}</span></div>
-                      </>
-                    );
-                  })()}
+            {/* Print Preview Container */}
+            <div ref={printRef} className="print-preview-container">
+              {/* Page 1 - Spare Parts & Materials */}
+              <div className="print-preview-page job-card-page">
+                {/* Header */}
+                <div className="jc-header">
+                  <div className="jc-company-name">Edward and Christie (Pvt) Ltd</div>
+                  <div className="jc-doc-title">Job Card (JC)</div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Info Section */}
+                <div className="jc-info-section">
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Vehicle Reg. No.:</span>
+                    <span className="jc-info-value">{selectedJobCard.vehicleRegNo}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">JC No.:</span>
+                    <span className="jc-info-value">{selectedJobCard.jobCardNo}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Company Code:</span>
+                    <span className="jc-info-value">{selectedJobCard.companyCode || '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Meter Reading:</span>
+                    <span className="jc-info-value">{selectedJobCard.vehicleMachineryMeter?.toLocaleString() || '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Vehicle/Machinery Category:</span>
+                    <span className="jc-info-value">{selectedJobCard.machine?.type || selectedJobCard.repairType || '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Chassis No.:</span>
+                    <span className="jc-info-value">{selectedJobCard.machine?.modelNo || '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Driver/Operator Name:</span>
+                    <span className="jc-info-value">{selectedJobCard.driverOperatorName || '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Driver/Operator Contact No.:</span>
+                    <span className="jc-info-value">{selectedJobCard.driverOperatorContact || '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Job Start Date:</span>
+                    <span className="jc-info-value">{selectedJobCard.jobStartDate ? new Date(selectedJobCard.jobStartDate).toLocaleDateString('en-GB') : '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Job Completed Date:</span>
+                    <span className="jc-info-value">{selectedJobCard.jobCompletedDate ? new Date(selectedJobCard.jobCompletedDate).toLocaleDateString('en-GB') : '-'}</span>
+                  </div>
+                  <div className="jc-info-row">
+                    <span className="jc-info-label">Job Description:</span>
+                    <span className="jc-info-value">{selectedJobCard.jobDescription || '-'}</span>
+                  </div>
+                </div>
+
+                {/* Spare Parts Table */}
+                <div className="jc-section-title">Cost of spare parts and materials</div>
+                <table className="jc-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '60px'}}>Date</th>
+                      <th style={{width: '70px'}}>MRIN No.</th>
+                      <th>Type of spare part and material</th>
+                      <th style={{width: '40px'}}>Qty.</th>
+                      <th style={{width: '70px'}}>Rate (Rs.)</th>
+                      <th style={{width: '80px'}}>Cost (Rs.)</th>
+                      <th style={{width: '80px'}}>Supervisor Signature</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedJobCard.items.map((item, index) => (
+                      <tr key={index}>
+                        <td>{new Date(item.issuedMaterial.date).toLocaleDateString('en-GB')}</td>
+                        <td>{item.issuedMaterial.mrnNo}</td>
+                        <td>{item.issuedMaterial.description}</td>
+                        <td style={{textAlign: 'center'}}>{item.issuedMaterial.qty}</td>
+                        <td style={{textAlign: 'right'}}>{item.issuedMaterial.price?.toFixed(2) || '-'}</td>
+                        <td style={{textAlign: 'right'}}>{item.issuedMaterial.total?.toFixed(2) || '-'}</td>
+                        <td></td>
+                      </tr>
+                    ))}
+                    {/* Empty rows for additional entries */}
+                    {Array.from({length: Math.max(0, 15 - selectedJobCard.items.length)}).map((_, i) => (
+                      <tr key={`empty-${i}`}>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div style={{textAlign: 'center', fontWeight: 'bold', marginBottom: '15px'}}>
+                  Total cost for the spare parts and materials *: Rs. {selectedJobCard.totalSparePartsCost.toFixed(2)}
+                </div>
+
+                {/* Footer */}
+                <div className="jc-footer">
+                  <span>Doc. No.: EC40.WS.FO.3:4:22.10</span>
+                  <span>Page 1 of 2</span>
+                </div>
+              </div>
+
+              {/* Page 2 - Outside Works, Manpower & Summary */}
+              <div className="print-preview-page job-card-page">
+                {/* Header */}
+                <div className="jc-header">
+                  <div className="jc-company-name">Edward and Christie (Pvt) Ltd</div>
+                  <div className="jc-doc-title">Job Card (JC)</div>
+                </div>
+
+                {/* Outside Works Table */}
+                <div className="jc-section-title">Outside works</div>
+                <table className="jc-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '70px'}}>Date</th>
+                      <th style={{width: '100px'}}>Supplier</th>
+                      <th>Description</th>
+                      <th style={{width: '80px'}}>Invoice No.</th>
+                      <th style={{width: '40px'}}>Qty.</th>
+                      <th style={{width: '70px'}}>Rate (Rs.)</th>
+                      <th style={{width: '80px'}}>Amount (Rs.)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedJobCard.outsideWorks && selectedJobCard.outsideWorks.map((work, index) => (
+                      <tr key={index}>
+                        <td>{new Date(work.date).toLocaleDateString('en-GB')}</td>
+                        <td></td>
+                        <td>{work.description}</td>
+                        <td></td>
+                        <td style={{textAlign: 'center'}}>1</td>
+                        <td style={{textAlign: 'right'}}>{work.cost.toFixed(2)}</td>
+                        <td style={{textAlign: 'right'}}>{work.cost.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    {/* Empty rows */}
+                    {Array.from({length: Math.max(0, 8 - (selectedJobCard.outsideWorks?.length || 0))}).map((_, i) => (
+                      <tr key={`ow-empty-${i}`}>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                      </tr>
+                    ))}
+                    <tr style={{fontWeight: 'bold', backgroundColor: '#f0f0f0'}}>
+                      <td colSpan={6} style={{textAlign: 'right'}}>Total cost of outside works (Rs.) **</td>
+                      <td style={{textAlign: 'right'}}>{selectedJobCard.outsideWorkCost.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Manpower Table */}
+                <div className="jc-section-title">Used Manpower Details</div>
+                <table className="jc-table">
+                  <thead>
+                    <tr>
+                      <th>Designation</th>
+                      <th>Name</th>
+                      <th style={{width: '80px'}}>No. of Hours</th>
+                      <th style={{width: '80px'}}>Hour Rate (Rs.)</th>
+                      <th style={{width: '90px'}}>Cost (Rs.)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {['Mechanic', 'Mechanic Helper', 'Electrician', 'Latheman', 'Welder', 'Serviceman', 'Serviceman Helper'].map((designation, index) => (
+                      <tr key={index}>
+                        <td>{designation}</td>
+                        <td></td>
+                        <td style={{textAlign: 'center'}}></td>
+                        <td style={{textAlign: 'right'}}></td>
+                        <td style={{textAlign: 'right'}}></td>
+                      </tr>
+                    ))}
+                    <tr style={{fontWeight: 'bold', backgroundColor: '#f0f0f0'}}>
+                      <td colSpan={4} style={{textAlign: 'right'}}>Total cost of man power (Rs.) ***</td>
+                      <td style={{textAlign: 'right'}}>{selectedJobCard.totalManpowerCost.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Cost Summary */}
+                <div className="jc-section-title">Cost Summary</div>
+                <table className="jc-cost-summary">
+                  <tbody>
+                    {(() => {
+                      const subtotal = selectedJobCard.totalSparePartsCost + selectedJobCard.totalManpowerCost + selectedJobCard.outsideWorkCost;
+                      const sundryWorkshopCost = subtotal * 0.10;
+                      const grandTotal = subtotal + sundryWorkshopCost;
+                      return (
+                        <>
+                          <tr>
+                            <td className="label">Note</td>
+                            <td className="value"></td>
+                          </tr>
+                          <tr>
+                            <td className="label">Spare part cost *</td>
+                            <td className="value">Rs. {selectedJobCard.totalSparePartsCost.toFixed(2)}</td>
+                          </tr>
+                          <tr>
+                            <td className="label">Outside work cost **</td>
+                            <td className="value">Rs. {selectedJobCard.outsideWorkCost.toFixed(2)}</td>
+                          </tr>
+                          <tr>
+                            <td className="label">Manpower cost ***</td>
+                            <td className="value">Rs. {selectedJobCard.totalManpowerCost.toFixed(2)}</td>
+                          </tr>
+                          <tr className="sundry-highlight">
+                            <td className="label">Sundry + Workshop Cost (10%)</td>
+                            <td className="value">Rs. {sundryWorkshopCost.toFixed(2)}</td>
+                          </tr>
+                          <tr className="grand-total-row">
+                            <td className="label">Total cost for the Job</td>
+                            <td className="value">Rs. {grandTotal.toFixed(2)}</td>
+                          </tr>
+                        </>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+
+                {/* Approval Section */}
+                <table className="jc-approval-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Name</th>
+                      <th>Designation</th>
+                      <th>Signature</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{fontWeight: 'bold'}}>Prepared By</td>
+                      <td className="jc-signature-box"></td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td style={{fontWeight: 'bold'}}>Approved By</td>
+                      <td className="jc-signature-box"></td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td style={{fontWeight: 'bold'}}>Handed Over to</td>
+                      <td className="jc-signature-box"></td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Footer */}
+                <div className="jc-footer">
+                  <span>Doc. No.: EC40.WS.FO.3:4:22.10</span>
+                  <span>Page 2 of 2</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>

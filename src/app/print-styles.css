@@ -1,0 +1,359 @@
+/* Print Styles for Job Card */
+@media print {
+  /* Hide non-print elements */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  
+  /* Reset background colors for printing */
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: white !important;
+  }
+  
+  /* Print container */
+  .print-container {
+    display: block !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Job Card Page styling */
+  .job-card-page {
+    page-break-after: always;
+    background: white;
+    padding: 5mm;
+    min-height: auto;
+  }
+  
+  .job-card-page:last-child {
+    page-break-after: auto;
+  }
+  
+  /* Header styling */
+  .jc-header {
+    border: 2px solid black;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .jc-company-name {
+    font-size: 14pt;
+    font-weight: bold;
+  }
+  
+  .jc-doc-title {
+    font-size: 14pt;
+    font-weight: bold;
+  }
+  
+  /* Info section */
+  .jc-info-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 20px;
+    margin-bottom: 15px;
+    font-size: 10pt;
+  }
+  
+  .jc-info-row {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+  }
+  
+  .jc-info-label {
+    min-width: 140px;
+    font-weight: 500;
+  }
+  
+  .jc-info-value {
+    border-bottom: 1px dotted #333;
+    flex: 1;
+    min-height: 18px;
+    padding-left: 5px;
+  }
+  
+  /* Table styling */
+  .jc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-bottom: 15px;
+  }
+  
+  .jc-table th,
+  .jc-table td {
+    border: 1px solid black;
+    padding: 5px 8px;
+    text-align: left;
+  }
+  
+  .jc-table th {
+    background-color: #e0e0e0 !important;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .jc-table td {
+    vertical-align: top;
+  }
+  
+  /* Section title */
+  .jc-section-title {
+    font-size: 11pt;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-decoration: underline;
+  }
+  
+  /* Cost summary */
+  .jc-cost-summary {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin-bottom: 15px;
+  }
+  
+  .jc-cost-summary td {
+    border: 1px solid black;
+    padding: 6px 10px;
+  }
+  
+  .jc-cost-summary .label {
+    font-weight: 500;
+    width: 60%;
+  }
+  
+  .jc-cost-summary .value {
+    text-align: right;
+    width: 40%;
+  }
+  
+  .jc-cost-summary .total-row {
+    font-weight: bold;
+    background-color: #f0f0f0 !important;
+  }
+  
+  /* Approval section */
+  .jc-approval-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-top: 15px;
+  }
+  
+  .jc-approval-table th,
+  .jc-approval-table td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .jc-approval-table th {
+    background-color: #e0e0e0 !important;
+  }
+  
+  .jc-signature-box {
+    min-height: 40px;
+  }
+  
+  /* Footer */
+  .jc-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8pt;
+    color: #666;
+    margin-top: 10px;
+    padding-top: 5px;
+  }
+  
+  /* Sundry/workshop cost highlight */
+  .sundry-highlight {
+    background-color: #fff9e6 !important;
+  }
+  
+  .grand-total-row {
+    font-weight: bold;
+    font-size: 11pt;
+    background-color: #e8f5e9 !important;
+  }
+}
+
+/* Print Preview Styles (screen) */
+.print-preview-container {
+  background: #f5f5f5;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.print-preview-page {
+  background: white;
+  max-width: 210mm;
+  margin: 0 auto 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 10mm;
+  min-height: 297mm;
+  position: relative;
+}
+
+@media screen {
+  .job-card-page {
+    background: white;
+  }
+  
+  .jc-header {
+    border: 2px solid black;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .jc-company-name {
+    font-size: 14pt;
+    font-weight: bold;
+  }
+  
+  .jc-doc-title {
+    font-size: 14pt;
+    font-weight: bold;
+  }
+  
+  .jc-info-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 20px;
+    margin-bottom: 15px;
+    font-size: 10pt;
+  }
+  
+  .jc-info-row {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+  }
+  
+  .jc-info-label {
+    min-width: 140px;
+    font-weight: 500;
+  }
+  
+  .jc-info-value {
+    border-bottom: 1px dotted #333;
+    flex: 1;
+    min-height: 18px;
+    padding-left: 5px;
+  }
+  
+  .jc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-bottom: 15px;
+  }
+  
+  .jc-table th,
+  .jc-table td {
+    border: 1px solid black;
+    padding: 5px 8px;
+    text-align: left;
+  }
+  
+  .jc-table th {
+    background-color: #e0e0e0;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .jc-table td {
+    vertical-align: top;
+  }
+  
+  .jc-section-title {
+    font-size: 11pt;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-decoration: underline;
+  }
+  
+  .jc-cost-summary {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin-bottom: 15px;
+  }
+  
+  .jc-cost-summary td {
+    border: 1px solid black;
+    padding: 6px 10px;
+  }
+  
+  .jc-cost-summary .label {
+    font-weight: 500;
+    width: 60%;
+  }
+  
+  .jc-cost-summary .value {
+    text-align: right;
+    width: 40%;
+  }
+  
+  .jc-cost-summary .total-row {
+    font-weight: bold;
+    background-color: #f0f0f0;
+  }
+  
+  .jc-approval-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-top: 15px;
+  }
+  
+  .jc-approval-table th,
+  .jc-approval-table td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .jc-approval-table th {
+    background-color: #e0e0e0;
+  }
+  
+  .jc-signature-box {
+    min-height: 40px;
+  }
+  
+  .jc-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8pt;
+    color: #666;
+    margin-top: 10px;
+    padding-top: 5px;
+  }
+  
+  .sundry-highlight {
+    background-color: #fff9e6;
+  }
+  
+  .grand-total-row {
+    font-weight: bold;
+    font-size: 11pt;
+    background-color: #e8f5e9;
+  }
+}
