@@ -221,6 +221,20 @@ sudo apt install -y build-essential python3
 
 #### Step 2: Clone and Setup
 
+**Quick Setup (Recommended):**
+
+```bash
+# Clone the repository
+git clone https://github.com/yohan114/Job-Card-Management-System.git
+cd Job-Card-Management-System
+
+# Run the setup script (automates all setup steps)
+chmod +x setup.sh
+./setup.sh
+```
+
+**Manual Setup:**
+
 ```bash
 # Clone the repository
 git clone https://github.com/yohan114/Job-Card-Management-System.git
