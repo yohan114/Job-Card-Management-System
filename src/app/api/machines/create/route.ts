@@ -5,9 +5,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
+    // Validate required fields
+    if (!body.registrationNo || body.registrationNo.trim() === '') {
+      return NextResponse.json({ 
+        error: 'Registration number is required' 
+      }, { status: 400 });
+    }
+
     // Check if registration number already exists
     const existing = await db.machine.findUnique({
-      where: { registrationNo: body.registrationNo }
+      where: { registrationNo: body.registrationNo.trim() }
     });
 
     if (existing) {
@@ -18,17 +25,18 @@ export async function POST(request: NextRequest) {
 
     const machine = await db.machine.create({
       data: {
-        ecNo: body.ecNo || null,
-        brand: body.brand || 'Unknown',
-        type: body.type || 'Unknown',
-        modelNo: body.modelNo || null,
-        registrationNo: body.registrationNo,
-        capacity: body.capacity || null,
+        ecNo: body.ecNo?.trim() || null,
+        brand: body.brand?.trim() || 'Unknown',
+        type: body.type?.trim() || 'Unknown',
+        modelNo: body.modelNo?.trim() || null,
+        registrationNo: body.registrationNo.trim(),
+        capacity: body.capacity?.trim() || null,
         yom: body.yom ? parseInt(body.yom) : null,
       }
     });
 
-    return NextResponse.json(machine);
+    console.log('Machine created successfully:', machine.registrationNo);
+    return NextResponse.json({ success: true, machine });
   } catch (error) {
     console.error('Error creating machine:', error);
     return NextResponse.json({ 

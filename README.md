@@ -230,9 +230,18 @@ cd Job-Card-Management-System
 bun install
 # Or: npm install
 
-# Setup database
+# Create database directory
+mkdir -p db
+
+# Setup database (IMPORTANT: This creates the database file)
 bun run db:push
 # Or: npm run db:push
+
+# Verify database was created
+ls -la db/custom.db
+
+# If database doesn't exist, run again:
+bun run db:generate && bun run db:push
 ```
 
 #### Step 3: Production Setup (PM2)
@@ -241,7 +250,8 @@ bun run db:push
 # Install PM2 globally
 sudo npm install -g pm2
 
-# Build the application
+# Generate Prisma client and build the application
+bun run db:generate
 bun run build
 # Or: npm run build
 
@@ -253,6 +263,46 @@ pm2 save
 
 # Setup PM2 to start on boot
 pm2 startup
+```
+
+#### Troubleshooting Ubuntu Server
+
+**If data is not saving:**
+
+```bash
+# 1. Check if database file exists
+ls -la db/custom.db
+
+# 2. Check file permissions
+chmod 664 db/custom.db
+chmod 775 db
+
+# 3. Regenerate Prisma client
+bun run db:generate
+
+# 4. Push database schema again
+bun run db:push
+
+# 5. Restart the application
+pm2 restart job-card-system
+
+# 6. Check logs for errors
+pm2 logs job-card-system
+```
+
+**Database connection issues:**
+
+```bash
+# Verify .env file has correct path
+cat .env
+# Should show: DATABASE_URL="file:./db/custom.db"
+
+# If .env is missing, create it:
+echo 'DATABASE_URL="file:./db/custom.db"' > .env
+
+# Then rebuild
+bun run db:generate
+bun run db:push
 ```
 
 #### Step 4: Configure Firewall (Optional)
