@@ -579,7 +579,10 @@ export default function JobCardApp() {
     const sparePartsCost = selectedItems.reduce((sum, item) => sum + (item.issuedMaterial.total || 0), 0);
     const manpowerCost = parseFloat(formData.totalManpowerCost) || 0;
     const outsideWorkCost = outsideWorks.reduce((sum, work) => sum + (work.cost || 0), 0);
-    return { sparePartsCost, manpowerCost, outsideWorkCost, total: sparePartsCost + manpowerCost + outsideWorkCost };
+    const subtotal = sparePartsCost + manpowerCost + outsideWorkCost;
+    const sundryWorkshopCost = subtotal * 0.10; // 10% of bill value
+    const total = subtotal + sundryWorkshopCost;
+    return { sparePartsCost, manpowerCost, outsideWorkCost, subtotal, sundryWorkshopCost, total };
   };
 
   const saveJobCard = async () => {
@@ -903,7 +906,7 @@ export default function JobCardApp() {
                           <Truck className="w-5 h-5 text-amber-600" />
                           <div>
                             <p className="font-medium">{vehicle}</p>
-                            <p className="text-sm text-gray-500">{mats.length} items • Rs. {mats.reduce((s, m) => s + (m.total || 0), 0).toFixed(2)}</p>
+                            <p className="text-sm text-gray-500">{mats.length} items • Rs. {(mats.reduce((s, m) => s + (m.total || 0), 0) * 1.10).toFixed(2)} <span className="text-xs">(incl. 10%)</span></p>
                           </div>
                         </div>
                         <Badge className="bg-amber-100 text-amber-700">{mats.length} pending</Badge>
@@ -965,7 +968,8 @@ export default function JobCardApp() {
                     <TableBody>
                       {Object.entries(groupedMaterials).map(([vehicle, mats]) => {
                         const categories = [...new Set(mats.map(m => m.category))];
-                        const total = mats.reduce((s, m) => s + (m.total || 0), 0);
+                        const subtotal = mats.reduce((s, m) => s + (m.total || 0), 0);
+                        const grandTotal = subtotal * 1.10; // With 10% sundry + workshop
                         return (
                           <TableRow key={vehicle} className={selectedGroups.includes(vehicle) ? 'bg-green-50' : ''}>
                             <TableCell>
@@ -990,7 +994,7 @@ export default function JobCardApp() {
                                 ))}
                               </div>
                             </TableCell>
-                            <TableCell className="text-right font-medium">Rs. {total.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-medium text-green-600">Rs. {grandTotal.toFixed(2)} <span className="text-xs text-gray-400">(incl. 10%)</span></TableCell>
                             <TableCell className="text-center">
                               <Button size="sm" onClick={async () => {
                                 setIsGenerating(true);
@@ -1162,12 +1166,15 @@ export default function JobCardApp() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {getFilteredJobCards().map(jc => (
-                        <TableRow key={jc.id}>
-                          <TableCell className="font-medium">{jc.jobCardNo}</TableCell>
-                          <TableCell>{jc.vehicleRegNo}</TableCell>
-                          <TableCell><Badge variant="outline">{jc.items.length} items</Badge></TableCell>
-                          <TableCell className="text-right">Rs. {(jc.totalSparePartsCost + jc.totalManpowerCost + jc.outsideWorkCost).toFixed(2)}</TableCell>
+                      {getFilteredJobCards().map(jc => {
+                        const subtotal = jc.totalSparePartsCost + jc.totalManpowerCost + jc.outsideWorkCost;
+                        const grandTotal = subtotal * 1.10; // With 10% sundry + workshop
+                        return (
+                          <TableRow key={jc.id}>
+                            <TableCell className="font-medium">{jc.jobCardNo}</TableCell>
+                            <TableCell>{jc.vehicleRegNo}</TableCell>
+                            <TableCell><Badge variant="outline">{jc.items.length} items</Badge></TableCell>
+                            <TableCell className="text-right font-medium text-green-600">Rs. {grandTotal.toFixed(2)}</TableCell>
                           <TableCell>
                             <Select value={jc.status} onValueChange={(v: any) => updateJobCardStatus(jc.id, v)}>
                               <SelectTrigger className="h-8 w-32">
@@ -1189,7 +1196,8 @@ export default function JobCardApp() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      );
+                      })}
                     </TableBody>
                   </Table>
                 </ScrollArea>
@@ -1387,7 +1395,10 @@ export default function JobCardApp() {
                     <div className="flex justify-between"><span className="text-gray-500">Manpower</span><span className="font-medium">Rs. {totals.manpowerCost.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-500">Outside Works</span><span className="font-medium">Rs. {totals.outsideWorkCost.toFixed(2)}</span></div>
                     <Separator />
-                    <div className="flex justify-between text-lg font-bold"><span>Total</span><span>Rs. {totals.total.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-medium">Rs. {totals.subtotal.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Sundry + Workshop (10%)</span><span className="font-medium text-amber-600">Rs. {totals.sundryWorkshopCost.toFixed(2)}</span></div>
+                    <Separator />
+                    <div className="flex justify-between text-lg font-bold"><span>Grand Total</span><span className="text-green-600">Rs. {totals.total.toFixed(2)}</span></div>
                   </div>
                 </CardContent>
               </Card>
@@ -1477,7 +1488,19 @@ export default function JobCardApp() {
                   <div className="flex justify-between"><span className="text-gray-500">Manpower Cost</span><span className="font-medium">Rs. {selectedJobCard.totalManpowerCost.toFixed(2)}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Outside Work Cost</span><span className="font-medium">Rs. {selectedJobCard.outsideWorkCost.toFixed(2)}</span></div>
                   <Separator />
-                  <div className="flex justify-between text-lg font-bold"><span>Grand Total</span><span>Rs. {(selectedJobCard.totalSparePartsCost + selectedJobCard.totalManpowerCost + selectedJobCard.outsideWorkCost).toFixed(2)}</span></div>
+                  {(() => {
+                    const subtotal = selectedJobCard.totalSparePartsCost + selectedJobCard.totalManpowerCost + selectedJobCard.outsideWorkCost;
+                    const sundryWorkshopCost = subtotal * 0.10;
+                    const grandTotal = subtotal + sundryWorkshopCost;
+                    return (
+                      <>
+                        <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-medium">Rs. {subtotal.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">Sundry + Workshop (10%)</span><span className="font-medium text-amber-600">Rs. {sundryWorkshopCost.toFixed(2)}</span></div>
+                        <Separator />
+                        <div className="flex justify-between text-lg font-bold"><span>Grand Total</span><span className="text-green-600">Rs. {grandTotal.toFixed(2)}</span></div>
+                      </>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -1501,15 +1524,19 @@ export default function JobCardApp() {
             </p>
             <ScrollArea className="h-64 border rounded-lg">
               <div className="p-4 space-y-2">
-                {Object.entries(groupedMaterials).map(([vehicle, mats]) => (
-                  <div key={vehicle} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div>
-                      <p className="font-medium">{vehicle}</p>
-                      <p className="text-sm text-gray-500">{mats.length} items</p>
+                {Object.entries(groupedMaterials).map(([vehicle, mats]) => {
+                  const subtotal = mats.reduce((s, m) => s + (m.total || 0), 0);
+                  const grandTotal = subtotal * 1.10;
+                  return (
+                    <div key={vehicle} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div>
+                        <p className="font-medium">{vehicle}</p>
+                        <p className="text-sm text-gray-500">{mats.length} items</p>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700">Rs. {grandTotal.toFixed(2)} <span className="text-xs opacity-70">(incl. 10%)</span></Badge>
                     </div>
-                    <Badge>Rs. {mats.reduce((s, m) => s + (m.total || 0), 0).toFixed(2)}</Badge>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           </div>
